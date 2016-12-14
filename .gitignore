@@ -1,0 +1,5 @@
+/AkamaiOpenApi/bin
+/AkamaiOpenApi/obj
+/packages
+/.vs/OepnApi/v14/*.suo
+/.vs/OpenApi/v14/*.suo

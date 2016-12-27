@@ -44,14 +44,21 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Clients\AkamaiOpenApiClient.cs" />
+    <Compile Include="Clients\PurgeClient.cs" />
     <Compile Include="Models\ClientCredentials.cs" />
     <Compile Include="Clients\PapiClient.cs" />
-    <Compile Include="Models\Properties.cs" />
+    <Compile Include="Models\PapiClient\ActivationResponse.cs" />
+    <Compile Include="Models\PapiClient\CreateNewVersionReuqestBody.cs" />
+    <Compile Include="Models\PapiClient\ActivatePropertyReuqestBody.cs" />
+    <Compile Include="Models\Constants.cs" />
+    <Compile Include="Models\PapiClient\PropertiesResponseBody.cs" />
+    <Compile Include="Models\PapiClient\VersionResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

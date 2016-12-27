@@ -1,13 +1,13 @@
 ﻿using Newtonsoft.Json;
 
-namespace AkamaiOpenApi.Models
+namespace AkamaiOpenApi.Models.PapiClient
 {
-    public class Properties
+    public class PropertiesResponse
     {
-        public Property properties { get; set; }
+        public Properties properties { get; set; }
     }
 
-    public class Property
+    public class Properties
     {
         public PropertyItem[] items { get; set; }
     }

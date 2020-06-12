@@ -1,3 +1,6 @@
+https://lucidworks.com/post/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
+
+
 public override DataUri[] GetItemsInWorkflowState(WorkflowInfo info, CallContext context)
 {
 	string sql = "SELECT TOP ({2}maxVersionsToLoad{3}) {0}ItemId{1}, {0}Language{1}, {0}Version{1}\r\n          FROM {0}VersionedFields{1}\r\n          WHERE {0}FieldId{1}= {2}workflowStateFieldID{3} \r\n          AND {0}Value{1}= {2}workflowStateFieldValue{3}\r\n          ORDER BY {0}Updated{1} DESC";

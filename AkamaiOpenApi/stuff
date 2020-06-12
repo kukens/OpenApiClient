@@ -1,22 +1,4 @@
-<configuration xmlns:patch="http://www.sitecore.net/xmlconfig/">
-  <sitecore>
-    <pipelines>
-      <glassMapper.getGlassLoaders>
-	<processor type="MyProject.Feature.FeatureGlassLoader , MyProject.Feature" />
-      </glassMapper.getGlassLoaders>
-    </pipelines>
-  </sitecore>
-</configuration>
-
-public class FeatureGlassLoader : GetGlassLoadersProcessor {
-
-    public void Process(GetGlassLoadersPipelineArgs args){
-
-           var loader = new SitecoreAttributeConfigurationLoader("MyProject.Feature");
-           args.Loaders.Add(loader); 
-    }
-
-}
-
-
-http://www.glass.lu/blog/HelixApproach
+CREATE NONCLUSTERED INDEX IX_Versioned_Workflow_Filtered
+    ON VersionedFields (itemid,FieldId)
+    INCLUDE (Value,language,version, updated)
+    WHERE FieldId='{3E431DE1-525E-47A3-B6B0-1CCBEC3A8C98}'

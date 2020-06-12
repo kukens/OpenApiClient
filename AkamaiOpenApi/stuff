@@ -2,3 +2,13 @@ CREATE NONCLUSTERED INDEX IX_Versioned_Workflow_Filtered
     ON VersionedFields (itemid,FieldId)
     INCLUDE (Value,language,version, updated)
     WHERE FieldId='{3E431DE1-525E-47A3-B6B0-1CCBEC3A8C98}'
+
+
+SELECT i.[name] AS IndexName
+    ,SUM(s.[used_page_count]) * 8 AS IndexSizeKB
+FROM sys.dm_db_partition_stats AS s
+INNER JOIN sys.indexes AS i ON s.[object_id] = i.[object_id]
+    AND s.[index_id] = i.[index_id]
+GROUP BY i.[name]
+ORDER BY i.[name]
+GO

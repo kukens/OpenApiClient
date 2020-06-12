@@ -1,14 +1,26 @@
-CREATE NONCLUSTERED INDEX IX_Versioned_Workflow_Filtered
-    ON VersionedFields (itemid,FieldId)
-    INCLUDE (Value,language,version, updated)
-    WHERE FieldId='{3E431DE1-525E-47A3-B6B0-1CCBEC3A8C98}'
-
-
-SELECT i.[name] AS IndexName
-    ,SUM(s.[used_page_count]) * 8 AS IndexSizeKB
-FROM sys.dm_db_partition_stats AS s
-INNER JOIN sys.indexes AS i ON s.[object_id] = i.[object_id]
-    AND s.[index_id] = i.[index_id]
-GROUP BY i.[name]
-ORDER BY i.[name]
-GO
+public override DataUri[] GetItemsInWorkflowState(WorkflowInfo info, CallContext context)
+{
+	string sql = "SELECT TOP ({2}maxVersionsToLoad{3}) {0}ItemId{1}, {0}Language{1}, {0}Version{1}\r\n          FROM {0}VersionedFields{1}\r\n          WHERE {0}FieldId{1}= {2}workflowStateFieldID{3} \r\n          AND {0}Value{1}= {2}workflowStateFieldValue{3}\r\n          ORDER BY {0}Updated{1} DESC";
+	DataUri[] result;
+	using (DataProviderReader dataProviderReader = this.Api.CreateReader(sql, new object[]
+	{
+		"maxVersionsToLoad",
+		Settings.Workbox.SingleWorkflowStateVersionLoadThreshold,
+		"workflowStateFieldID",
+		FieldIDs.WorkflowState,
+		"workflowStateFieldValue",
+		info.StateID
+	}))
+	{
+		ArrayList arrayList = new ArrayList();
+		while (dataProviderReader.Read())
+		{
+			ID id = this.Api.GetId(0, dataProviderReader);
+			Language language = this.Api.GetLanguage(1, dataProviderReader);
+			Version version = this.Api.GetVersion(2, dataProviderReader);
+			arrayList.Add(new DataUri(id, language, version));
+		}
+		result = (arrayList.ToArray(typeof(DataUri)) as DataUri[]);
+	}
+	return result;
+}

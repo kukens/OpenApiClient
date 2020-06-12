@@ -1,5 +1,11 @@
 https://lucidworks.com/post/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
 
+Incoming documents are received by a node and forwarded to the proper shard leader.
+From the shard leader they’re sent to all replicas for the shard.
+The replicas respond to their leader.
+The leader responds to the originating node.
+After all the leaders have responded, the originating node replies to the client. At this point, all documents have been flushed to the tlog for all the nodes in the cluster!
+
 
 public override DataUri[] GetItemsInWorkflowState(WorkflowInfo info, CallContext context)
 {

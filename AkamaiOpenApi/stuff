@@ -1,4 +1,7 @@
 https://lucidworks.com/post/understanding-transaction-logs-softcommit-and-commit-in-sorlcloud/
+https://lucene.apache.org/solr/guide/6_6/shards-and-indexing-data-in-solrcloud.html#ShardsandIndexingDatainSolrCloud-IgnoringCommitsfromClientApplicationsinSolrCloud
+
+
 
 Incoming documents are received by a node and forwarded to the proper shard leader.
 From the shard leader they’re sent to all replicas for the shard.

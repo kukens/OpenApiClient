@@ -1,1 +1,7 @@
 https://kb.sitecore.net/articles/879610
+
+
+CREATE NONCLUSTERED INDEX IX_Versioned_Workflow_Filtered
+    ON VersionedFields (itemid,FieldId)
+    INCLUDE (Value,language,version, updated)
+    WHERE FieldId='{3E431DE1-525E-47A3-B6B0-1CCBEC3A8C98}'

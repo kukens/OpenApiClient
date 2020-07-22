@@ -1,16 +1,1 @@
-/ to prevent the while loop from reaching MinVersions,
-        // only process this number of items
-        int limit = item.Versions.Count - this.MinVersions;
-        int i = 0;
-  
-        while (item.Versions.Count > this.MinVersions && i < limit)
-        {
-          SC.Data.Items.Item version = item.Versions.GetVersions()[i++];
-          Assert.IsNotNull(version, "version");
-  
-          if (this.MinUpdatedDays < 1
-            || version.Statistics.Updated.AddDays(this.MinUpdatedDays) < DateTime.Now)
-          {
-            this.HandleVersion(version);
-          }
-        }
+sitecore://master/{DAC24EDD-44FB-42EF-9ECD-1E8DAF706386}?lang=en&ver=1

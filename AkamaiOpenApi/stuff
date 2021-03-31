@@ -1,57 +1,11 @@
-$database = "master"
-$root = Get-Item -Path (@{$true="$($database):\content\home";
-$false="$($database):\content"}[(Test-Path -Path
-"$($database):\content\home")])
-
-$settings = @{
-     Title = "Items with more than one version report"
-     OkButtonName = "Proceed"
-     CancelButtonName = "Abort"
-     Parameters = @(
-         @{
-             Name="root";
-             Title="Choose the report root";
-             Tooltip="Only items from this root will be returned.";
-         }
-     )
-       ShowHint = $true
-}
-
-$result = Read-Variable @settings
-if($result -ne "ok") {
-     Exit
-}
-
-$criteria = @(
-     @{Filter = "Contains"; Field = "_path"; Value =
-$root.Id.Guid.ToString("N") }
-     @{Filter = "Equals"; Field = "_language"; Value = "en"; }
-
-     # GreaterThan filter for some reason does not work so using invert option and checking if item is latest version
-     @{Filter = "Equals"; Field = "_version"; Value = 1; Invert=$true }
-     @{Filter = "Equals"; Field = "_latestversion"; Value = 1; }
-)
-
-$props = @{
-     Index = "sitecore_master_index"
-     Criteria = $criteria
-}
-
-$items = Find-Item @props -OrderBy "Path" | Initialize-Item
-
-if($items.Count -eq 0){
-     Show-Alert "No items found!"
-} else {
-     $props = @{
-         Title = "Export Item"
-         InfoTitle = "Total $($items.Count) items found!"
-         InfoDescription = "Export Item Data"
-         PageSize = 100
-     }
-     [string[]] $columns = "ItemPath"
-     [string[]] $columns += $items | Get-ItemField -Name "Title"
-     [string[]] $columns += "Version"
-     [string[]] $columns += $items | Get-ItemField -IncludeStandardFields -Name "__Updated by", "__Updated"
-
-     $items | Show-ListView @props -Property $columns }
-
+UPDATE 
+    [aspnet_Membership] 
+SET 
+    [Password]='qOvF8m8F2IcWMvfOBjJYHmfLABc=', 
+    [PasswordSalt]='OM5gu45RQuJ76itRvkSPFw==', 
+    [IsApproved] = '1', 
+    [IsLockedOut] = '0'
+WHERE 
+    UserId IN (
+        SELECT UserId FROM dbo.aspnet_Users WHERE UserName = 'sitecore\Admin'
+    ) 

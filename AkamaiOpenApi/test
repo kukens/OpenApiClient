@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Spectrum Analyzer (20 Hz – 1000 Hz)</title>
+  <style>
+    body {
+      background: #222;
+      color: white;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    #stats {
+      font-size: 14px;
+    }
+    .element{
+      float: left;
+    border: 1px solid #222;
+    background: white;
+    width: 50px;
+    height: 50px;
+    color:#222;
+    }
+    #active{
+      padding-bottom:10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="track">
+
+  </div>
+  <div style="clear: both;">
+  <button id="freeze">Stop</button></div>
+  <div id="stats">Mean: – | Median: – | RMS: –</div>
+	<div id='myDiv'><!-- Plotly chart will be drawn inside this DIV --></div>
+  <h4 id="chordText"></h4>
+  <p id="chordsGroups"></p>
+  <p id="freq2"></p>
+  <p id="freq1"></p>
+
+  <script src="chords.js"></script>
+  <script src="notes.js"></script>
+  <script src="track.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/meyda/dist/web/meyda.min.js"></script>
+  <script>
+    var currentChord = "";
+    const trackDiv = document.getElementById("track");
+    track.bars.forEach(x => {
+      x.chords.forEach(y=>{      
+        let newDiv = document.createElement('div');
+      newDiv.className = "element";
+      newDiv.innerHTML = `<p>${y}</p>`
+      trackDiv.appendChild(newDiv);
+    })
+    })
+
+    var elements = document.getElementsByClassName("element");
+
+    var timePerBeat = 60 / track.tempo * 1000;
+    var i = 0;
+var currentElementIndex;
+var currentElementText
+    setInterval(() => {
+      if (i == 0) {
+        elements[i].id = "active";
+        elements[elements.length-1].id = "";
+      }
+      else if (i > 0) {
+        elements[i-1].id = "";
+        elements[i].id = "active";
+      }
+
+      currentElementText = elements[i].innerText;
+      currentElementIndex = i;
+      console.log(currentElementText)
+      console.log(currentElementIndex)
+      
+      elements[currentElementIndex].style = "background:red;";
+
+      setInterval(() => {
+        console.log("current: " + currentChord);
+        if (currentChord === currentElementText){
+          elements[currentElementIndex].style = "background:green;";
+        }
+
+
+      }, 200);
+      
+      i++;
+
+      if (i == elements.length) {
+        i = 0;
+      }
+
+
+    }, timePerBeat);
+
+
+    const statsDisplay = document.getElementById("stats");
+    const freq1 = document.getElementById("freq1");
+    const freq2 = document.getElementById("freq2");
+    const chord = document.getElementById("chordText");
+    const chordsGroups =  document.getElementById("chordsGroups");
+
+    var analyzer = {};
+
+    async function start() {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      sampleRate = audioCtx.sampleRate;
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      
+      analyzer = Meyda.createMeydaAnalyzer({
+        audioContext: audioCtx,
+        source: source,
+        bufferSize: 4096 * 2,
+        featureExtractors: ["amplitudeSpectrum"],
+        callback: features => drawSpectrum(features.amplitudeSpectrum)
+      });
+
+      analyzer.start();
+    }
+
+var freeze = false;
+const freezeButton = document.getElementById("freeze");
+freezeButton.addEventListener("click", (event) => {
+  freeze = freeze == false ? true : false;
+  if (freeze) {
+    freezeButton.innerText = "Start";
+    analyzer.stop();
+  }
+  else {
+    freezeButton.innerText = "Stop";
+    analyzer.start();
+  }
+});
+
+    function drawSpectrum(spectrum) {
+
+
+      const nyquist = sampleRate / 2;
+      const freqStep = nyquist / spectrum.length;
+
+      const startBin = Math.floor(50 / freqStep);
+      const endBin = Math.ceil(10000 / freqStep);
+      const visibleBins = spectrum.slice(startBin, endBin);
+      const binCount = visibleBins.length;
+
+
+      const targetFrequencies = [];
+
+      // Calculate stats
+      const mean = visibleBins.reduce((a, b) => a + b, 0) / binCount;
+
+      var freqsWithMagnitudes = [];
+      for (let i = 0; i < binCount; i++) {
+        freqsWithMagnitudes.push({
+            freq: (startBin + i) * freqStep,
+            magnitude: visibleBins[i]
+        })
+      }
+
+      maxes = [];
+      for (var i = 1; i < freqsWithMagnitudes.length - 1; ++i) {
+          if (
+            freqsWithMagnitudes[i-1].magnitude < freqsWithMagnitudes[i].magnitude && freqsWithMagnitudes[i].magnitude > freqsWithMagnitudes[i+1].magnitude)
+              maxes.push(freqsWithMagnitudes[i])
+      } 
+
+      const aboveMean = maxes.filter(x=> x.magnitude > mean);
+      const rms = Math.sqrt(aboveMean.reduce((sum, val) => sum + val.magnitude * val.magnitude, 0) / aboveMean.length);
+
+      function matchFrequencies(inputFrequencies, harmonicData) {
+            const matchedNotes = [];
+
+            harmonicData.forEach(harmonicDataElement => {
+               var matchedMagnitudes = [];
+               const matchedHarmonics = harmonicDataElement.freqs.filter(harmFreq =>
+
+                inputFrequencies.some(inputFrequency => {
+
+                  let tol = getTolerance(harmFreq);
+                  
+                  // filter elements by tolerance (if tol is 10 then it tolerates 10 downwards and upwards)
+                  let filtered = inputFrequencies.filter(inputFreq=> (harmFreq - inputFreq.freq <= tol && inputFreq.freq - harmFreq < tol));
+
+                  if (filtered.length > 0){
+                      // get closest value from tolerane range 
+                      let filteredValues = filtered.map(x=> x.freq).reduce((closest, current) => {
+                        return Math.abs(current - inputFrequency) < Math.abs(closest - inputFrequency) ? current : closest;
+                      });
+
+                      let magnitude = filtered.filter(x=> x.freq)[0].magnitude;  
+
+                      //get max value from tolerane range
+                      //let magnitude = Math.max(...filtered.map(x=>x.magnitude));
+                      matchedMagnitudes.push(magnitude);
+                      return true;
+                  }
+
+                  return false
+                })
+              );
+
+              if (matchedHarmonics.length > 0) {
+                matchedNotes.push(
+                  { 
+                    note: harmonicDataElement.note,
+                    family: harmonicDataElement.family,
+                    score: matchedMagnitudes.reduce((a, b) => a + b),
+                    magnitudes: matchedMagnitudes,
+                    frequencies: matchedHarmonics
+                  });
+              }
+            });
+            
+            return matchedNotes;
+      }  
+      
+      function getTolerance(input){
+         // return input / 100;
+         return (input / 200) * 3;
+      }
+
+      function evaluateChord(familyScores){
+        var chords = [];
+
+        chordsData.forEach(chordInfo =>{
+          let finalScore = 0;
+
+          if (chordInfo.notes.every(note => {
+            let matchedNoteFamily = familyScores.filter(x=> x.family == note);
+            let isMatch = matchedNoteFamily?.length == 1;
+
+            if (isMatch){
+              finalScore += matchedNoteFamily[0].score;
+            }
+            return isMatch;
+          })){
+            
+            var matchedChordInfo = {
+              chord: chordInfo.chord,
+              score: finalScore,
+              notes: chordInfo.notes
+            }
+
+      
+            chords.push(matchedChordInfo)
+          }
+        });
+        
+        let sortedChords = Object.entries(chords).sort((a, b) => b[1].score - a[1].score).map(x=> x[1]);
+
+       
+        return sortedChords
+      }
+
+      var output = "";
+
+      if (aboveMean.some(x=> x.magnitude > 10)){
+        const result = matchFrequencies(aboveMean, harmonicData);
+
+        let rmsScore = Math.sqrt(result.reduce((sum, val) => sum + val.score * val.score, 0) / result.length);
+        let meanScore = result.reduce((a, b) => a + b.score, 0) / result.length;
+        let rmsFrequencyHits = Math.sqrt(result.reduce((sum, val) => sum + val.frequencies.length * val.frequencies.length, 0) / result.length);
+        let meanFrequencyHits = result.reduce((a, b) => a + b.frequencies.length, 0) / result.length;
+
+        output += `Mean from matched: ${meanScore.toFixed(1)} <br/>`;
+        output += `RMS from matched: ${rmsScore.toFixed(1)} <br/>`;
+        output += `MeanFrequencyHits: ${meanFrequencyHits.toFixed(1)} <br/>`;
+        output += `RmsFrequencyHits: ${rmsFrequencyHits.toFixed(1)} <br/>`;
+
+        output +=  "<br/>";
+
+        if (result.length > 0){
+          let filtredResults = result.filter(x=> x.score > meanScore && x.frequencies.length > 4).sort((a, b) => b.score - a.score);
+          filtredResults.forEach(x => {
+          
+            let scoreText = `${x.note} = ${x.score.toFixed(1)} | `;
+              x.magnitudes.forEach((val, i) => {
+                scoreText += `${x.frequencies[i].toFixed(1)}hz ${val.toFixed(1)} | `;
+              });
+
+              if (x.score > rmsScore) output += '<span style="color: green">';
+              output += scoreText;
+              if (x.score > rmsScore) output += '</span>';
+
+               output += "---> ";
+              harmonicData.filter(y=> y.note == x.note)[0].freqs.forEach(z=>{
+               output += z.toFixed(1) + " | "
+              })
+              output += "<br/>";
+          });
+
+          freq2.innerHTML = output;
+
+            var familyScores = {};
+
+            //normalize scoreNormalized and prepare family scores
+            filtredResults.forEach(x=>{
+                //x.scoreNormalized = x.frequencies.length > rmsFrequencyHits ? x.score * x.frequencies.length :  x.score
+                let currentFamilyScore = familyScores[x.family];
+                if (currentFamilyScore == null){
+                  familyScores[x.family] = { family : x.family, score: x.score};
+                }
+                else{
+                  familyScores[x.family].score = currentFamilyScore.score + x.score
+                }
+            });
+
+            familyScores = Object.entries(familyScores).sort((a, b) => b[1].score - a[1].score).map(x=> x[1])
+
+            let chordsGroupsText = "";
+            familyScores.forEach(x=>{
+              chordsGroupsText += x.family + "  " + x.score.toFixed(1) + "<br/>";
+            });
+            chordsGroups.innerHTML = chordsGroupsText;
+
+            let chordText = "";
+            var evaluatedchords = evaluateChord(familyScores);
+
+            if (evaluatedchords[0]) {
+              currentChord = evaluatedchords[0].chord;
+              chordText += `${evaluatedchords[0].chord} - ${evaluatedchords[0].score.toFixed(1)} - ${evaluatedchords[0].notes} <br/>`
+            }
+            if (evaluatedchords[1]) chordText += `${evaluatedchords[1].chord} - ${evaluatedchords[1].score.toFixed(1)} - ${evaluatedchords[1].notes} <br/>`
+            if (evaluatedchords[2]) chordText += `${evaluatedchords[2].chord} - ${evaluatedchords[2].score.toFixed(1)} - ${evaluatedchords[2].notes} <br/>`
+            if (evaluatedchords[3]) chordText += `${evaluatedchords[3].chord} - ${evaluatedchords[3].score.toFixed(1)} - ${evaluatedchords[3].notes} <br/>`
+            if (evaluatedchords[4]) chordText += `${evaluatedchords[4].chord} - ${evaluatedchords[4].score.toFixed(1)} - ${evaluatedchords[4].notes} <br/>`
+
+            chord.innerHTML = chordText;
+
+        }
+   
+
+    
+
+    }
+        statsDisplay.innerText =
+        `Mean: ${mean.toFixed(3)}\n` +
+        `RMS: ${rms.toFixed(3)}\n`;
+
+        var freqsText = "";
+        aboveMean.forEach((val, i) => {
+                freqsText += `${val.freq.toFixed(1)} (${getTolerance(val.freq).toFixed(1)}) -- ${aboveMean[i].magnitude.toFixed(1)} <br> `;
+              });
+
+        freq1.innerHTML = freqsText;
+    }
+
+    start();
+  </script>
+</body>
+</html>
